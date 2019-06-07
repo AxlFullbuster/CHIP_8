@@ -1,5 +1,4 @@
 #include  <stdio.h>
-#include //graphics 
 #include "chip8.h"
 
 chip8 mychip8;
