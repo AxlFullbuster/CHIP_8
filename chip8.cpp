@@ -2,6 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <iostream>
+#include <vector>
+#include <ios>
+#include <fstream>
+
+using std::streamsize;
+using std::vector;
+using std::ifstream;
+using std::ios;
 
 
 chip8::chip8(){
@@ -130,13 +139,33 @@ void chip8::emulateCycle(){
                 else
                   pc +=2;
               break;
+            
+              default:
+              printf ("Unkown opcode: Ex%X\n", opcode);
+              exit(0);
             }
+        break;
         
         case 0xF000:
             switch (opcode & 0x00FF){
               case 0x0007: //opcode fx07
                 V[(opcode & 0x0F00) >> 8] = delay_timer;
                 pc += 2;
+              break;
+            
+              case 0x000A:{ //opcode fx0A
+                bool keypress = false;
+                for(int i = 0; i< 16; ++i){
+                    if (key[i] == 1) {
+                        V[(opcode & 0x0F00) >> 8] = i;
+                        keypress = true;
+                    }
+                }
+                
+                if(!keypress)
+                    return; 
+                pc += 2;
+              } 
               break;
             
               case 0x0015: // opcode fx15
@@ -155,7 +184,7 @@ void chip8::emulateCycle(){
               break;
                 
               case 0x0029: //opcode fx29
-                I = gfx[V[(opcode & 0x0F00) >> 8]];
+                I = V[(opcode & 0x0F00) >> 8] *5;
                 pc += 2;
               break;
             
@@ -174,21 +203,28 @@ void chip8::emulateCycle(){
               }
               break;
             
-              case 0x0065: //opcode fx65
+              case 0x0065:{ //opcode fx65
                 unsigned char X = V[(opcode & 0x0F00) >> 8];
                 for (unsigned char r = 0; r <= X; r++) {
                     V[r] = memory [I+r];
                 }
                 pc += 2;
+              }
               break;
+            
+              default:
+              printf ("Unkown opcode: Fx%X\n", opcode);
+              exit(0);
                 
             }
+        break;
             
         case 0x0000:
             switch (opcode & 0x000F){
                 case 0x0000: //0x00E0: clears the screen
                   for(int i = 0; i< 64*32; ++i)
                       gfx[i] = 0;
+                      drawFlag = true;
                   
                   pc += 2;
                 break;
@@ -200,7 +236,8 @@ void chip8::emulateCycle(){
                 break;
                 
                 default:
-                    printf("Unkwn opcode [0x0000]: 0x%X\n", opcode);
+                    printf ("Unkown opcode: 0x%X\n", opcode);
+                    exit(0);
             }
         break;
       
@@ -217,16 +254,25 @@ void chip8::emulateCycle(){
         case 0x3000: //opcode 3xkk
           if (V[(opcode && 0x0F00) >> 8] == (opcode & 0x00FF))
             pc += 4;
+          
+          else
+            pc += 2;
         break;
       
         case 0x4000: //opcode 4xkk
           if (V[(opcode && 0x0F00) >> 8] != (opcode & 0x00FF))
             pc += 4;
+          
+          else
+            pc += 2;
         break;
       
         case 0x5000: //opcode 5xy0
           if (V[(opcode && 0x0F00) >> 8] == V[(opcode && 0x00F0) >> 4])
             pc += 4;
+            
+          else
+            pc +=2;
         break;
       
         case 0x6000: //opcode 6xkk
@@ -306,7 +352,12 @@ void chip8::emulateCycle(){
                 V[(opcode & 0x0F00) >> 8] <<= 1;
                 pc += 2;
               break;
+            
+              default:
+              printf ("Unkown opcode: 8x%X\n", opcode);
+              exit(0);
             }
+        break;
             
         case 0x9000: //opcode 9xy0
           if(V[(opcode && 0x0F00) >> 8] != V[(opcode && 0x00F0) >> 4])
@@ -315,6 +366,7 @@ void chip8::emulateCycle(){
         
         default:
         printf ("Unkown opcode: 0x%X\n", opcode);
+        exit(0);
     }
         
   //Update Timers
@@ -329,6 +381,30 @@ void chip8::emulateCycle(){
     
 }
 
-void loadGame(const char* filename){
+bool chip8::loadGame(const char* filename){
+    initialize();
+    ifstream rom(filename, ios::in | ios::binary | ios::ate);
+    streamsize size = rom.tellg();
+    rom.seekg(0, ios::beg);
+    vector<char> buffer(size);
     
+    if (rom.read(buffer.data(), size)){
+
+      // Loop over each byte and add it into the memory array at the correct offset
+      for (int i = 0; i <= buffer.size(); ++i) {
+      	memory[0x200 + i] = buffer[i];
+      }
+      
+    } else {
+        printf("Couldn't load file");
+        return false;
+      }
+      
+    rom.close();
+    return true;
 }
+
+
+
+
+

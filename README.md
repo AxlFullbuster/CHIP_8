@@ -1,9 +1,12 @@
 This is a small project that focuses on creating a CHIP-8 Emulator.
 
-The code structure and layout was taken and referenced from this CHIP-8 Emulator tutorial: http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+It uses SDL to display the games and currently only works on linux machines. Windows support will be added sometime in the future.
 
-Besides the layout and structure all of the code was written by me.
+It uses Cmake to compile this is what you'll need to do
+cmake .
+make
+./CHIP_8 "Rom file name*
 
-Current progress: Implemented all operation codes for the emulator
+The rom file has to be in the same directory as the executable.
 
-What needs to be done: Graphics implementation, Input implementation, loading the game into memory. 
+Current Status: Debugging and Testing

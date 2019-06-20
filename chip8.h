@@ -1,3 +1,6 @@
+#ifndef CHIP8_H
+#define CHIP8_H
+
 class chip8{
     private:
         unsigned short opcode;
@@ -29,3 +32,5 @@ class chip8{
         unsigned char key[16];
            
 };
+
+#endif
