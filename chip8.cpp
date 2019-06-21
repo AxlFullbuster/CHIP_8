@@ -13,14 +13,6 @@ using std::ifstream;
 using std::ios;
 
 
-chip8::chip8(){
-	// empty
-}
-
-chip8::~chip8() {
-	// empty
-}
-
 unsigned char chip8_fontset[80] = { 
   0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
   0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -39,6 +31,14 @@ unsigned char chip8_fontset[80] = {
   0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
   0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
+
+chip8::chip8(){
+	// empty
+}
+
+chip8::~chip8() {
+	// empty
+}
 
 void chip8::initialize(){
         pc = 0x200; //Program counter starts at 0x200
@@ -95,12 +95,11 @@ void chip8::emulateCycle(){
         break;
       
         case 0xC000: //opcode cxkk
-            V[(opcode & 0x0F00) >> 8] = rhex && (opcode & 0x00FF);
+            V[(opcode & 0x0F00) >> 8] = rhex & (opcode & 0x00FF);
             pc += 2;
         break;
       
-        case 0xD000: //opcode dxyn
-            {
+        case 0xD000:{
               unsigned short x = V[(opcode & 0x0F00) >> 8];
               unsigned short y = V[(opcode & 0x00F0) >> 4];
               unsigned short height = opcode & 0x000F;
@@ -108,23 +107,24 @@ void chip8::emulateCycle(){
  
               V[0xF] = 0;
               for (int yline = 0; yline < height; yline++) {
-                pixel = memory[I + yline];
-                for(int xline = 0; xline < 8; xline++) {
-                    if((pixel & (0x80 >> xline)) != 0) {
-                      if(gfx[(x + xline + ((y + yline) * 64))] == 1)
-                          V[0xF] = 1;                                 
-                          gfx[x + xline + ((y + yline) * 64)] ^= 1;
-                      }
+                  pixel = memory[I + yline];
+                  for(int xline = 0; xline < 8; xline++) {
+                     if((pixel & (0x80 >> xline)) != 0) {
+                        if(gfx[x + xline + ((y + yline) * 64)] == 1){
+                            V[0xF] = 1;                                   
+                        }
+                      gfx[x + xline + ((y + yline) * 64)] ^= 1;
                     }
-              }
+                  }
+                }
               drawFlag = true;
               pc += 2;
             }
         break;
       
-        case 0xE000: 
+        case 0xE000:{ 
             switch (opcode & 0x00FF){
-              case 0x009e: //opcode ex9e
+              case 0x009E: //opcode ex9e
                 if(key[V[(opcode & 0x0F00) >> 8]] != 0)
                   pc += 4;
                 
@@ -132,7 +132,7 @@ void chip8::emulateCycle(){
                   pc +=2;
               break;
             
-              case 0x00a1: //opcode exa1
+              case 0x00A1: //opcode exa1
                 if(key[V[(opcode & 0x0F00) >> 8]] != 1)
                   pc += 4;
                 
@@ -144,6 +144,7 @@ void chip8::emulateCycle(){
               printf ("Unkown opcode: Ex%X\n", opcode);
               exit(0);
             }
+        }
         break;
         
         case 0xF000:
@@ -179,7 +180,12 @@ void chip8::emulateCycle(){
               break;
                   
               case 0x001E: //opcode fx1e
-                I = I + V[(opcode & 0x0F00) >> 8];
+                if(I + V[(opcode & 0x0F00) >> 8] > 0xFFF)	// VF is set to 1 when range overflow (I+VX>0xFFF), and 0 when there isn't.
+                    V[0xF] = 1;
+                else
+                    V[0xF] = 0;
+                    
+                I += V[(opcode & 0x0F00) >> 8];
                 pc += 2;
               break;
                 
@@ -206,7 +212,7 @@ void chip8::emulateCycle(){
               case 0x0065:{ //opcode fx65
                 unsigned char X = V[(opcode & 0x0F00) >> 8];
                 for (unsigned char r = 0; r <= X; r++) {
-                    V[r] = memory [I+r];
+                    V[r] = memory [I+r]; //intentional error
                 }
                 pc += 2;
               }
@@ -222,16 +228,17 @@ void chip8::emulateCycle(){
         case 0x0000:
             switch (opcode & 0x000F){
                 case 0x0000: //0x00E0: clears the screen
-                  for(int i = 0; i< 64*32; ++i)
+                  for(int i = 0; i< 64*32; ++i){
                       gfx[i] = 0;
-                      drawFlag = true;
-                  
+                  }
+                      
+                  drawFlag = true;
                   pc += 2;
                 break;
                     
                 case 0x000E: //0x00EE: returns from subroutine
-                  stack[sp] = pc;
                   --sp;
+                  pc = stack[sp];
                   pc += 2;
                 break;
                 
@@ -248,11 +255,11 @@ void chip8::emulateCycle(){
         case 0x2000: //opcode 2nnn
           stack[sp] = pc;
           ++sp;
-          pc = opcode & 0xFFF;
+          pc = opcode & 0x0FFF;
         break;
       
         case 0x3000: //opcode 3xkk
-          if (V[(opcode && 0x0F00) >> 8] == (opcode & 0x00FF))
+          if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
             pc += 4;
           
           else
@@ -260,7 +267,7 @@ void chip8::emulateCycle(){
         break;
       
         case 0x4000: //opcode 4xkk
-          if (V[(opcode && 0x0F00) >> 8] != (opcode & 0x00FF))
+          if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
             pc += 4;
           
           else
@@ -268,7 +275,7 @@ void chip8::emulateCycle(){
         break;
       
         case 0x5000: //opcode 5xy0
-          if (V[(opcode && 0x0F00) >> 8] == V[(opcode && 0x00F0) >> 4])
+          if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
             pc += 4;
             
           else
@@ -276,12 +283,12 @@ void chip8::emulateCycle(){
         break;
       
         case 0x6000: //opcode 6xkk
-          V[(opcode && 0x0F00) >> 8] = (opcode && 0x00FF);
+          V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
           pc += 2;
         break;
       
         case 0x7000: //opcode 7xkk
-          V[(opcode && 0x0F00) >> 8] = V[(opcode && 0x0F00) >> 8] + (opcode && 0x00FF);
+          V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] +  (opcode & 0x00FF) ;
           pc += 2;
         break;
       
@@ -289,22 +296,22 @@ void chip8::emulateCycle(){
             switch (opcode & 0x000F){
               
               case 0x0000: //opcode 8xy0
-                V[(opcode && 0x0F00) >> 8] = V[ (opcode && 0x00F0) >> 4];
+                V[(opcode & 0x0F00) >> 8] = V[ (opcode & 0x00F0) >> 4];
                 pc += 2;
               break;
             
               case 0x0001: //opcode 8xy1
-                V[(opcode && 0x0F00) >> 8] = V[(opcode && 0x0F00 >> 8)] | V[(opcode && 0x00F0) >> 4];
+                V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] | V[(opcode & 0x00F0) >> 4];
                 pc += 2;
               break;
             
               case 0x0002: //opcode 8xy2
-                V[(opcode && 0x0F00) >> 8] = V[(opcode && 0x0F00 >> 8)] && V[(opcode && 0x00F0) >> 4];
+                V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] & V[(opcode & 0x00F0) >> 4];
                 pc += 2;
               break;
             
               case 0x0003: //opcode 8xy3
-                V[(opcode && 0x0F00) >> 8] = V[(opcode && 0x0F00 >> 8)] ^ V[(opcode && 0x00F0) >> 4];
+                V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] ^ V[(opcode & 0x00F0) >> 4];
                 pc += 2;
               break;
               
@@ -320,13 +327,13 @@ void chip8::emulateCycle(){
               break;
             
               case 0x0005: //opcode 8xy5
-                if(V[(opcode && 0x0F00) >> 8] > V[(opcode && 0x00F0) >> 4])
+                if(V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])
                   V[0xF] = 1;
                   
                 else
                   V[0xF] = 0;
                   
-                V[(opcode && 0x0F00) >> 8] = V[(opcode && 0x00F0) >> 4] - V[(opcode && 0x0F00) >> 8];
+                V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] - V[(opcode & 0x00F0) >> 4];
                 pc += 2;
               break;
             
@@ -337,11 +344,11 @@ void chip8::emulateCycle(){
               break;
             
               case 0x0007: //opcode 8xy7
-                if(V[(opcode & 0x0F00) >> 8] < V[(opcode & 0x00F0) >> 4])
-                  V[0xF] = 1;
+                if(V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])
+                  V[0xF] = 0;
                   
                 else
-                  V[0xF] = 0;
+                  V[0xF] = 1;
                   
                 V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x00F0) >> 8];
                 pc += 2;
@@ -360,8 +367,11 @@ void chip8::emulateCycle(){
         break;
             
         case 0x9000: //opcode 9xy0
-          if(V[(opcode && 0x0F00) >> 8] != V[(opcode && 0x00F0) >> 4])
+          if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
             pc +=4;
+            
+          else
+            pc +=2;
         break; 
         
         default:
@@ -380,6 +390,7 @@ void chip8::emulateCycle(){
   }
     
 }
+
 
 bool chip8::loadGame(const char* filename){
     initialize();

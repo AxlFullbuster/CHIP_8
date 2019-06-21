@@ -8,11 +8,12 @@ using std::endl;
 
 chip8 mychip8;
 SDL_Window* window = NULL;
-SDL_Surface* surface = NULL;
-SDL_Texture* texture = NULL;
 SDL_Renderer* renderer = NULL;
-const int SCREEN_WIDTH = 680;
-const int SCREEN_HEIGHT = 480;
+SDL_Texture* texture = NULL;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
+int sx = SCREEN_WIDTH / 64;
+int sy = SCREEN_HEIGHT / 32;
 
 bool init() {
     
@@ -44,12 +45,12 @@ bool init() {
         SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     }
     
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 64, 32);
+    
     return success;
 }
 
 void close() {
-    SDL_DestroyTexture(texture);
-    texture = NULL;
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     renderer = NULL;
@@ -216,31 +217,33 @@ int main(int argc, char**argv) {
                     }
                 }
             }
-        }
-    
+           
             mychip8.emulateCycle();
         
             //If the draw flag is set, update the screen
             if(mychip8.drawFlag){
                 SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
                 SDL_RenderClear(renderer);
-                int x = 0;
-                int y = 0;
-                for(int i = 0; i < 64*32; ++i){
-                    if(i % 64 == 0){
-                        x += 9;
-                        y = 0;
+                SDL_SetRenderDrawColor(renderer, 0x00,0x00,0x9F,0xFF);
+                int rownum = 0;
+                SDL_Rect pixel;
+                for(int y = 0; y < 32; ++y){
+                    for(int x = 0; x< 64; ++x) {
+                        
+                        pixel.x = x*sx;
+                        pixel.y = y*sy;
+                        pixel.w = 10;
+                        pixel.h = 10;
+                        rownum = y*64;
+                        if(mychip8.gfx[x + rownum] == 1){
+                            SDL_RenderFillRect(renderer,&pixel);  
+                        } 
                     }
-                    if(mychip8.gfx[i] == 1){
-                        SDL_Rect fillRect = {x, y, 10, 10};
-                        SDL_SetRenderDrawColor(renderer, 0x00,0xFF,0x00,0xFF);
-                        SDL_RenderFillRect(renderer, &fillRect);
-                    }
-                    y += 9;
                 }
                 SDL_RenderPresent(renderer);
                 mychip8.drawFlag = false;
             }
+        }
       
     }
     close();
