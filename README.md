@@ -17,5 +17,5 @@ Debugging and Testing
 
 References:  
 How to write an emulator: http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
-Cowgod's Chip8 Techinical Reference: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx0A
+Cowgod's Chip8 Techinical Reference: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx0A  
 LazyFoo Productions: http://lazyfoo.net/tutorials/SDL/index.php#Hello%20SDL
