@@ -13,7 +13,7 @@ make
 The rom file has to be in the same directory as the executable.
 
 Current Status:  
-Debugging and Testing
+Completed! Version 1.0: Slight bugs and issues that I might come back and fix later.
 
 References:  
 How to write an emulator: http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
