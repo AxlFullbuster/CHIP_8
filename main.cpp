@@ -10,17 +10,17 @@ chip8 mychip8;
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Texture* texture = NULL;
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 320;
 int sx = SCREEN_WIDTH / 64;
 int sy = SCREEN_HEIGHT / 32;
 
 bool init() {
     
-    //Initalization flag
+    
     bool success = true;
     
-    //Initialize SDL
+    
     if(SDL_Init(SDL_INIT_VIDEO) < 0 ) {
         printf ( "SDL could not be initialized! SDL Error: %s\n", SDL_GetError());
         success = false;
@@ -30,13 +30,13 @@ bool init() {
 			printf("Warning: Linear texture filtering not enabled!");
 	}
     
-    //create window
+    
     window = SDL_CreateWindow("CHIP_8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (window == NULL){
         printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
         success = false;
     }
-    //create renderer
+    
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL){
         printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
@@ -78,25 +78,25 @@ int main(int argc, char**argv) {
         SDL_Event e;
         while(!quit) {
             while( SDL_PollEvent( &e ) != 0 ) {
-                //User requests quit
+                
                 if( e.type == SDL_QUIT ) {
                     quit = true;
                 }
-                else if (e.type == SDL_KEYDOWN){
+                else if (e.type == SDL_KEYDOWN &&e.key.repeat == 0 ){
                     switch(e.key.keysym.sym){
-                        case SDLK_KP_1:
+                        case SDLK_1:
                             mychip8.key[0x1] = 1;
                         break;
                 
-                        case SDLK_KP_2:
+                        case SDLK_2:
                             mychip8.key[0x2] = 1;
                         break;
             
-                        case SDLK_KP_3:
+                        case SDLK_3:
                             mychip8.key[0x3] = 1;
                         break;
             
-                        case SDLK_KP_4:
+                        case SDLK_4:
                             mychip8.key[0xC] = 1;
                         break;
             
@@ -146,24 +146,28 @@ int main(int argc, char**argv) {
             
                         case SDLK_v:
                             mychip8.key[0xF] = 1;
-                        break;     
+                        break;
+                    
+                        case SDLK_ESCAPE:
+                            exit(0);
+                        break;
                     }
                 }
-                else if(e.type == SDL_KEYDOWN) {
+                else if(e.type == SDL_KEYUP && e.key.repeat == 0) {
                     switch(e.key.keysym.sym){
-                        case SDLK_KP_1:
+                        case SDLK_1:
                             mychip8.key[0x1] = 0;
                         break;
             
-                        case SDLK_KP_2:
+                        case SDLK_2:
                             mychip8.key[0x2] = 0;
                         break;
             
-                        case SDLK_KP_3:
+                        case SDLK_3:
                             mychip8.key[0x3] = 0;
                         break;
             
-                        case SDLK_KP_4:
+                        case SDLK_4:
                             mychip8.key[0xC] = 0;
                         break;
             
@@ -215,12 +219,12 @@ int main(int argc, char**argv) {
                             mychip8.key[0xF] = 0;
                         break;     
                     }
-                }
+                } 
             }
            
             mychip8.emulateCycle();
         
-            //If the draw flag is set, update the screen
+            
             if(mychip8.drawFlag){
                 SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
                 SDL_RenderClear(renderer);

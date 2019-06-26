@@ -77,166 +77,23 @@ void chip8::initialize(){
 }
 
 void chip8::emulateCycle(){
-    int random = rand() % 256;
-    unsigned char rhex = random;
-  
+   
     //Fetch Opcode
     opcode = memory[pc] << 8 | memory[pc + 1];
     
     //Decode Opcode
     switch(opcode & 0xF000){
-        case 0xA000: //ANNN sets I to the register NNN
-            I = opcode & 0x0FFF;
-            pc +=2;
-        break;
-      
-        case 0xB000: //opcode bnnn
-            pc = (opcode & 0x0FFF) + V[0x0];
-        break;
-      
-        case 0xC000: //opcode cxkk
-            V[(opcode & 0x0F00) >> 8] = rhex & (opcode & 0x00FF);
-            pc += 2;
-        break;
-      
-        case 0xD000:{
-              unsigned short x = V[(opcode & 0x0F00) >> 8];
-              unsigned short y = V[(opcode & 0x00F0) >> 4];
-              unsigned short height = opcode & 0x000F;
-              unsigned short pixel;
- 
-              V[0xF] = 0;
-              for (int yline = 0; yline < height; yline++) {
-                  pixel = memory[I + yline];
-                  for(int xline = 0; xline < 8; xline++) {
-                     if((pixel & (0x80 >> xline)) != 0) {
-                        if(gfx[x + xline + ((y + yline) * 64)] == 1){
-                            V[0xF] = 1;                                   
-                        }
-                      gfx[x + xline + ((y + yline) * 64)] ^= 1;
-                    }
-                  }
-                }
-              drawFlag = true;
-              pc += 2;
-            }
-        break;
-      
-        case 0xE000:{ 
-            switch (opcode & 0x00FF){
-              case 0x009E: //opcode ex9e
-                if(key[V[(opcode & 0x0F00) >> 8]] != 0)
-                  pc += 4;
-                
-                else
-                  pc +=2;
-              break;
-            
-              case 0x00A1: //opcode exa1
-                if(key[V[(opcode & 0x0F00) >> 8]] != 1)
-                  pc += 4;
-                
-                else
-                  pc +=2;
-              break;
-            
-              default:
-              printf ("Unkown opcode: Ex%X\n", opcode);
-              exit(0);
-            }
-        }
-        break;
-        
-        case 0xF000:
-            switch (opcode & 0x00FF){
-              case 0x0007: //opcode fx07
-                V[(opcode & 0x0F00) >> 8] = delay_timer;
-                pc += 2;
-              break;
-            
-              case 0x000A:{ //opcode fx0A
-                bool keypress = false;
-                for(int i = 0; i< 16; ++i){
-                    if (key[i] == 1) {
-                        V[(opcode & 0x0F00) >> 8] = i;
-                        keypress = true;
-                    }
-                }
-                
-                if(!keypress)
-                    return; 
-                pc += 2;
-              } 
-              break;
-            
-              case 0x0015: // opcode fx15
-                 delay_timer = V[(opcode & 0x0F00) >> 8];
-                 pc += 2;
-              break;
-                  
-              case 0x0018: //opcode fx18
-                sound_timer = V[(opcode & 0x0F00) >> 8];
-                pc += 2;
-              break;
-                  
-              case 0x001E: //opcode fx1e
-                if(I + V[(opcode & 0x0F00) >> 8] > 0xFFF)	// VF is set to 1 when range overflow (I+VX>0xFFF), and 0 when there isn't.
-                    V[0xF] = 1;
-                else
-                    V[0xF] = 0;
-                    
-                I += V[(opcode & 0x0F00) >> 8];
-                pc += 2;
-              break;
-                
-              case 0x0029: //opcode fx29
-                I = V[(opcode & 0x0F00) >> 8] *5;
-                pc += 2;
-              break;
-            
-              case 0x0033: //opcode fx33
-                memory[I]  = V[(opcode & 0x0F00) >> 8] / 100;
-                memory[I+1] = (V[(opcode & 0x0F00) >> 8] /10) % 10;
-                memory[I+2] = (V[(opcode & 0xF00) >> 8] % 100) % 10;
-              break;
-            
-              case 0x0055: { //opcode fx55
-                unsigned char X = V[(opcode & 0x0F00) >> 8];
-                for (unsigned char r = 0; r <= X; r++) {
-                    memory[I+r] = V[r];
-                }
-                pc += 2;
-              }
-              break;
-            
-              case 0x0065:{ //opcode fx65
-                unsigned char X = V[(opcode & 0x0F00) >> 8];
-                for (unsigned char r = 0; r <= X; r++) {
-                    V[r] = memory [I+r]; //intentional error
-                }
-                pc += 2;
-              }
-              break;
-            
-              default:
-              printf ("Unkown opcode: Fx%X\n", opcode);
-              exit(0);
-                
-            }
-        break;
-            
         case 0x0000:
             switch (opcode & 0x000F){
-                case 0x0000: //0x00E0: clears the screen
+                case 0x0000: //opcode 00e0
                   for(int i = 0; i< 64*32; ++i){
                       gfx[i] = 0;
                   }
-                      
                   drawFlag = true;
                   pc += 2;
                 break;
                     
-                case 0x000E: //0x00EE: returns from subroutine
+                case 0x000E: //opcode 00ee
                   --sp;
                   pc = stack[sp];
                   pc += 2;
@@ -244,7 +101,6 @@ void chip8::emulateCycle(){
                 
                 default:
                     printf ("Unkown opcode: 0x%X\n", opcode);
-                    exit(0);
             }
         break;
       
@@ -362,7 +218,6 @@ void chip8::emulateCycle(){
             
               default:
               printf ("Unkown opcode: 8x%X\n", opcode);
-              exit(0);
             }
         break;
             
@@ -374,9 +229,152 @@ void chip8::emulateCycle(){
             pc +=2;
         break; 
         
+        case 0xA000: //opcode annn
+            I = opcode & 0x0FFF;
+            pc +=2;
+        break;
+      
+        case 0xB000: //opcode bnnn
+            pc = (opcode & 0x0FFF) + V[0x0];
+        break;
+      
+        case 0xC000: //opcode cxkk
+            V[(opcode & 0x0F00) >> 8] = (rand() % 0xFF) & (opcode & 0x00FF);
+            pc += 2;
+        break;
+      
+        case 0xD000:{ // opcode dxyn
+              unsigned short x = V[(opcode & 0x0F00) >> 8];
+              unsigned short y = V[(opcode & 0x00F0) >> 4];
+              unsigned short height = opcode & 0x000F;
+              unsigned short pixel;
+ 
+              V[0xF] = 0;
+              for (int yline = 0; yline < height; yline++) {
+                  pixel = memory[I + yline];
+                  for(int xline = 0; xline < 8; xline++) {
+                     if((pixel & (0x80 >> xline)) != 0) {
+                        if(gfx[(x + xline + ((y + yline) * 64))] == 1){
+                            V[0xF] = 1;                                   
+                        }
+                      gfx[x + xline + ((y + yline) * 64)] ^= 1;
+                    }
+                  }
+                }
+              drawFlag = true;
+              pc += 2;
+            }
+        break;
+      
+        case 0xE000:{ 
+            switch (opcode & 0x00FF){
+              case 0x009E: //opcode ex9e
+                if(key[V[(opcode & 0x0F00) >> 8]] == 1)
+                  pc += 4;
+                
+                else
+                  pc +=2;
+              break;
+            
+              case 0x00A1: //opcode exa1
+                if(key[V[(opcode & 0x0F00) >> 8]] == 0)
+                  pc += 4;
+                
+                else
+                  pc +=2;
+              break;
+            
+              default:
+              printf ("Unkown opcode: Ex%X\n", opcode);
+            }
+        }
+        break;
+        
+        case 0xF000:
+            switch (opcode & 0x00FF){
+              case 0x0007: //opcode fx07
+                V[(opcode & 0x0F00) >> 8] = delay_timer;
+                pc += 2;
+              break;
+            
+              case 0x000A:{ //opcode fx0A
+                bool keypress = false;
+                for(int i = 0; i< 16; ++i){
+                    if (key[i] == 1) {
+                        V[(opcode & 0x0F00) >> 8] = i;
+                        keypress = true;
+                    }
+                }
+                
+                if(!keypress)
+                    return; 
+                pc += 2;
+              } 
+              break;
+            
+              case 0x0015: // opcode fx15
+                 delay_timer = V[(opcode & 0x0F00) >> 8];
+                 pc += 2;
+              break;
+                  
+              case 0x0018: //opcode fx18
+                sound_timer = V[(opcode & 0x0F00) >> 8];
+                pc += 2;
+              break;
+                  
+              case 0x001E: //opcode fx1e
+                if( I + V[(opcode & 0x0F00) >> 8] > 0xFFF){
+                  V[0xF] = 1;
+                }
+                else {
+                  V[0xF] = 0;
+                }
+                I = I + V[(opcode & 0x0F00) >> 8];
+                pc += 2;
+              break;
+                
+              case 0x0029: //opcode fx29
+                I = V[(opcode & 0x0F00) >> 8] *5;
+                pc += 2;
+              break;
+            
+              case 0x0033: //opcode fx33
+                memory[I]  = V[(opcode & 0x0F00) >> 8] / 100;
+                memory[I+1] = (V[(opcode & 0x0F00) >> 8] /10) % 10;
+                memory[I+2] = (V[(opcode & 0xF00) >> 8] % 100) % 10;
+                pc += 2;
+              break;
+            
+              case 0x0055:{  //opcode fx55
+                unsigned char X = ((opcode & 0x0F00) >> 8);
+                for (unsigned char r = 0; r <= X; r++) {
+                    memory[I+r] = V[r];
+                }
+                
+                I = I + X + 1;
+                pc += 2;
+              }
+              break;
+            
+              case 0x0065:{ //opcode fx65
+                unsigned char X = ((opcode & 0x0F00) >> 8);
+                for (unsigned char r = 0; r <= X; r++) {
+                    V[r] = memory [I+r];  
+                }
+                
+                I = I + X + 1;
+                pc += 2;
+              }
+              break;
+            
+              default:
+              printf ("Unkown opcode: Fx%X\n", opcode);
+                
+            }
+        break;
+      
         default:
         printf ("Unkown opcode: 0x%X\n", opcode);
-        exit(0);
     }
         
   //Update Timers
@@ -385,7 +383,6 @@ void chip8::emulateCycle(){
         
   if(sound_timer > 0){
     if (sound_timer == 1)
-      printf("BEEP!\n");
       --sound_timer;
   }
     
@@ -401,7 +398,6 @@ bool chip8::loadGame(const char* filename){
     
     if (rom.read(buffer.data(), size)){
 
-      // Loop over each byte and add it into the memory array at the correct offset
       for (int i = 0; i <= buffer.size(); ++i) {
       	memory[0x200 + i] = buffer[i];
       }
@@ -414,6 +410,7 @@ bool chip8::loadGame(const char* filename){
     rom.close();
     return true;
 }
+
 
 
 

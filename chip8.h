@@ -4,15 +4,15 @@
 class chip8{
     private:
         unsigned short opcode;
-        unsigned short I; //Index Register
-        unsigned short pc; //Program counter
-        unsigned short sp; //stack pointer
+        unsigned short I; 
+        unsigned short pc; 
+        unsigned short sp; 
         
         unsigned char delay_timer;
         unsigned char sound_timer;
         
         unsigned char memory[4096];
-        unsigned char V[16]; //cpu registers
+        unsigned char V[16]; 
         unsigned short stack[16];
         
         void initialize();
@@ -30,6 +30,7 @@ class chip8{
         
         unsigned char gfx[64*32];
         unsigned char key[16];
+       
            
 };
 
